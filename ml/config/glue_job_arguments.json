@@ -1,0 +1,8 @@
+{
+  "_status": "HISTORICAL/UNUSED - Glue creation was denied; Lambda is the deployed ETL replacement",
+  "--SOURCE_PATH": "s3://cicdfp-data-lake-dev/raw/cicdfp-sample-app-build/",
+  "--OUTPUT_PATH": "s3://cicdfp-data-lake-dev/processed/glue-build-features/",
+  "--job-language": "python",
+  "--enable-metrics": "true",
+  "--enable-continuous-cloudwatch-log": "true"
+}

@@ -1,0 +1,54 @@
+{
+  "input_directory": "P:\\cloud project\\ml\\data\\splits",
+  "output_directory": "P:\\cloud project\\ml\\data\\sagemaker_xgboost",
+  "format": "CSV without header; label is first column for SageMaker XGBoost",
+  "feature_columns": [
+    "files_changed",
+    "lines_changed",
+    "repo_recent_failure_rate",
+    "time_of_day_bucket",
+    "day_of_week",
+    "prior_failures_last_5_builds"
+  ],
+  "label_column": "label",
+  "output_columns": [
+    "label",
+    "files_changed",
+    "lines_changed",
+    "repo_recent_failure_rate",
+    "time_of_day_bucket",
+    "day_of_week",
+    "prior_failures_last_5_builds"
+  ],
+  "categorical_encoding": "fixed deterministic integer encoding",
+  "category_mappings": {
+    "time_of_day_bucket": {
+      "night": 0,
+      "morning": 1,
+      "afternoon": 2,
+      "evening": 3
+    },
+    "day_of_week": {
+      "Mon": 0,
+      "Tue": 1,
+      "Wed": 2,
+      "Thu": 3,
+      "Fri": 4,
+      "Sat": 5,
+      "Sun": 6
+    }
+  },
+  "shuffling": false,
+  "row_counts": {
+    "train": 2689257,
+    "validation": 576283,
+    "test": 576257
+  },
+  "missing_values": false,
+  "dropped_rows": 0,
+  "limitations": [
+    "Integer encoding preserves six logical model features and keeps files compact.",
+    "The integer order is deterministic but categories are nominal; evaluate one-hot encoding if model quality is inadequate.",
+    "Chronological membership is inherited unchanged from data/splits/manifest.json."
+  ]
+}
