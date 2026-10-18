@@ -1,0 +1,63 @@
+{
+  "Comment": "M3 CI/CD failure prediction orchestration workflow",
+  "QueryLanguage": "JSONata",
+  "StartAt": "FetchFeatures",
+  "States": {
+    "FetchFeatures": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "arn:aws:lambda:ap-south-1:880690594500:function:m3-fetch-features-dev",
+        "Payload": "{% $states.input %}"
+      },
+      "Output": "{% $states.result.Payload %}",
+      "Next": "PreparePrediction"
+    },
+    "PreparePrediction": {
+      "Type": "Pass",
+      "Output": {
+        "build_id": "{% $states.input.build_id %}",
+        "repo": "{% $states.input.repo %}",
+        "features": "{% $states.input.features %}",
+        "model_input": "{% $join([$string($states.input.features.files_changed), $string($states.input.features.lines_changed), $string($states.input.features.repo_recent_failure_rate), $string($states.input.features.time_of_day_bucket), $string($states.input.features.day_of_week), $string($states.input.features.prior_failures_last_5_builds)], ',') %}"
+      },
+      "Next": "PredictFailure"
+    },
+    "PredictFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sagemakerruntime:invokeEndpoint",
+      "Arguments": {
+        "EndpointName": "m2-xgboost-endpoint-v2-dev",
+        "ContentType": "text/csv",
+        "Body": "{% $states.input.model_input %}"
+      },
+      "Output": {
+        "build_id": "{% $states.input.build_id %}",
+        "repo": "{% $states.input.repo %}",
+        "features": "{% $states.input.features %}",
+        "prediction_response": "{% $states.result %}"
+      },
+      "Next": "ClassifyRisk"
+    },
+    "ClassifyRisk": {
+      "Type": "Pass",
+      "Output": {
+        "build_id": "{% $states.input.build_id %}",
+        "repo": "{% $states.input.repo %}",
+        "features": "{% $states.input.features %}",
+        "risk_score": "{% $number($trim($states.input.prediction_response.Body)) %}",
+        "risk_level": "{% $number($trim($states.input.prediction_response.Body)) < 0.4 ? 'low' : ($number($trim($states.input.prediction_response.Body)) <= 0.7 ? 'medium' : 'high') %}"
+      },
+      "Next": "SNS Publish"
+    },
+    "SNS Publish": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Arguments": {
+        "TopicArn": "arn:aws:sns:ap-south-1:880690594500:m3-alert-topic",
+        "Message": "{% $string({'build_id': $states.input.build_id, 'repo': $states.input.repo, 'risk_score': $states.input.risk_score, 'risk_level': $states.input.risk_level, 'message': 'CI/CD build risk prediction completed'}) %}"
+      },
+      "End": true
+    }
+  }
+}
